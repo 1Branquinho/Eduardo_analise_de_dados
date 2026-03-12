@@ -124,120 +124,77 @@ pop_data = requests.get(url_pop).json()
 print(f"SP Population: {pop_data['projecao']['populacao']}")
 
 
+import requests
+import pandas as pd
+import matplotlib.pyplot as plt
+
 # ===========================================================
 # PARTE 5 – IPEA DATA
 # ===========================================================
-"""
-Documentação:
-https://www.ipeadata.gov.br/api/
-Exercícios:
-1. Consulte os metadados de uma série.
-2. Identifique:
-   - nome da série
-   - descrição
-   - unidade
-3. Consulte os valores históricos da série.
-4. Transforme em DataFrame.
-"""
-# RESOLVA AQUI:
 
+metadata_url = "http://www.ipeadata.gov.br/api/odata4/Metadados('AD12_GIGP12')"
+metadata_response = requests.get(metadata_url)
+metadata_json = metadata_response.json()['value']
+print(pd.DataFrame(metadata_json)[['SERNOME', 'SERCOMENTARIO', 'UNINOME']])
 
+values_url = "http://www.ipeadata.gov.br/api/odata4/ValoresSerie(SERCODIGO='AD12_GIGP12')"
+values_response = requests.get(values_url)
+values_json = values_response.json()['value']
+df_ipea = pd.DataFrame(values_json)
+print(df_ipea.head())
 
 # ===========================================================
 # PARTE 6 – BANCO CENTRAL DO BRASIL (BCB)
 # ===========================================================
-"""
-Dados Abertos BCB:
-https://dadosabertos.bcb.gov.br/
-Exemplo: Consulta PTAX
-Parâmetros:
-{
- "formato": "json",
- "dataInicial": "01/01/2024",
- "dataFinal": "31/12/2024"
-}
-Exercícios:
-1. Consulte a cotação do dólar em 2024.
-2. Transforme em DataFrame.
-3. Calcule:
-   - média
-   - valor máximo
-   - valor mínimo
-4. Plote gráfico de linha.
-"""
-# RESOLVA AQUI:
 
+bcb_url = "https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/aplicacao/resources/usuario/pesquisa/CotacaoDolarPeriodo(dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)?@dataInicial='01-01-2024'&@dataFinalCotacao='12-31-2024'&$format=json"
+bcb_response = requests.get(bcb_url)
+bcb_data = bcb_response.json()['value']
 
+df_usd = pd.DataFrame(bcb_data)
+df_usd['dataHoraCotacao'] = pd.to_datetime(df_usd['dataHoraCotacao'])
+
+print(df_usd['cotacaoCompra'].mean())
+print(df_usd['cotacaoCompra'].max())
+print(df_usd['cotacaoCompra'].min())
+
+df_usd.set_index('dataHoraCotacao')['cotacaoCompra'].plot()
+plt.show()
 
 # ===========================================================
 # PARTE 7 – FOOTBALL-DATA.ORG
 # ===========================================================
-"""
-Documentação:
-https://www.football-data.org/documentation/quickstart
-Observação:
-Essa API exige API-KEY.
-Exercícios:
-1. Consulte as áreas (countries).
-2. Filtre o Brasil (CountryCode = "BRA").
-3. Consulte competições do Brasil.
-4. Consulte os times da temporada 2025.
-Explique:
-O que são parâmetros de consulta?
-"""
-# RESOLVA AQUI:
 
+headers = {'X-Auth-Token': 'YOUR_API_KEY'}
+areas_url = "https://api.football-data.org/v4/areas/"
+areas_response = requests.get(areas_url, headers=headers)
+df_areas = pd.DataFrame(areas_response.json()['areas'])
+print(df_areas[df_areas['countryCode'] == 'BRA'])
 
+teams_url = "https://api.football-data.org/v4/competitions/BSA/teams?season=2025"
+teams_response = requests.get(teams_url, headers=headers)
+df_teams = pd.DataFrame(teams_response.json()['teams'])
+print(df_teams[['name', 'shortName', 'tla']])
 
 # ===========================================================
-# PARTE 8 – RAPIDAPI (EXEMPLOS)
+# PARTE 8 – RAPIDAPI (NBA Example)
 # ===========================================================
-"""
-Exemplos:
-Tripadvisor – SearchLocation
-querystring = {"query":"brasilia"}
-NBA – Estatísticas de jogadores
-querystring = {"game":"8133"}
-Exercícios:
-1. Escolha uma API do RapidAPI.
-2. Faça uma consulta.
-3. Transforme a resposta em DataFrame.
-4. Descreva a estrutura do JSON retornado.
-Desafio:
-Identifique níveis aninhados no JSON.
-"""
-# RESOLVA AQUI:
 
-
+rapid_url = "https://free-nba.p.rapidapi.com/players"
+rapid_headers = {
+    "X-RapidAPI-Key": "YOUR_RAPID_KEY",
+    "X-RapidAPI-Host": "free-nba.p.rapidapi.com"
+}
+rapid_response = requests.get(rapid_url, headers=rapid_headers, params={"page": "0", "per_page": "25"})
+df_nba = pd.json_normalize(rapid_response.json()['data'])
+print(df_nba.head())
 
 # ===========================================================
-# PARTE 9 – EXPLORAÇÃO LIVRE
+# PARTE 9 – EXPLORAÇÃO LIVRE (PokeAPI)
 # ===========================================================
-"""
-Pesquise APIs públicas em:
-https://github.com/public-apis/public-apis
-https://apilayer.com/marketplace
-https://app.balldontlie.io/
-Exercícios:
-1. Escolha uma API pública.
-2. Consulte dados.
-3. Transforme em DataFrame.
-4. Faça uma pequena análise exploratória.
-"""
-# RESOLVA AQUI:
 
-
-
-# ===========================================================
-# Revisão FINAL
-# ===========================================================
-"""
-Responda:
-
-1. O que é uma API?
-2. O que é um endpoint?
-3. O que são parâmetros?
-4. O que é JSON?
-5. O que é Headers?
-6. O que é Token?
-"""
+poke_url = "https://pokeapi.co/api/v2/pokemon?limit=100"
+poke_response = requests.get(poke_url)
+df_poke = pd.DataFrame(poke_response.json()['results'])
+print(df_poke.describe())
+print(df_poke['name'].str.upper())
